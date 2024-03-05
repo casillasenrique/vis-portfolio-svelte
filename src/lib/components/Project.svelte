@@ -11,3 +11,15 @@
   <img src={projectData.image ?? PLACEHOLDER_IMAGE} alt="Project screenshot" />
   <p>{projectData.description}</p>
 </article>
+
+<style>
+  article {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-row: span 3;
+
+    h2 {
+      margin: 0.5em;
+    }
+  }
+</style>
