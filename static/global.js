@@ -1,5 +1,9 @@
 console.log('Hi!');
 
+function $$ (selector, context = document) {
+	return Array.from(context.querySelectorAll(selector));
+}
+
 console.log(document);
 const setColorScheme = (colorScheme) => {
   console.log('color scheme changed to', colorScheme);
