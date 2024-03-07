@@ -25,3 +25,39 @@
     {/if}
   {/each}
 </nav>
+
+<style>
+  nav {
+    --border-color: oklch(50% 10% 200 / 40%);
+
+    display: flex;
+
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+
+    a {
+      flex: 1;
+
+      text-decoration: none;
+      color: inherit;
+      text-align: center;
+      padding: 0.5em;
+      transition:
+        border 0.1s ease,
+        background-color 0.1s ease;
+    }
+
+    a:hover {
+      border-bottom: 0.4em solid var(--accent-color);
+      padding-bottom: 0.1em;
+      font-weight: bold;
+      background-color: color-mix(in oklch, var(--accent-color), canvas 85%);
+    }
+
+    .current {
+      border-bottom: 0.4em solid var(--border-color);
+      padding-bottom: 0.1em;
+      font-weight: bold;
+    }
+  }
+</style>

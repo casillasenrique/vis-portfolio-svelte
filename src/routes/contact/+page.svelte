@@ -10,3 +10,25 @@
   </span>
   <button type="submit">Submit</button>
 </form>
+
+<style>
+  form {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1em;
+
+    input,
+    textarea,
+    button,
+    select {
+      font: inherit;
+    }
+
+    span,
+    button {
+      display: grid;
+      grid-template-columns: subgrid;
+      grid-column: 1 / -1;
+    }
+  }
+</style>

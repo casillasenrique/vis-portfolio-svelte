@@ -35,3 +35,31 @@
     </section>
   </div>
 </div>
+
+<style>
+  .resume {
+    header {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+
+      span {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+      }
+
+      p,
+      h4,
+      h5 {
+        margin: 0;
+      }
+    }
+  }
+</style>
