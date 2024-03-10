@@ -1,20 +1,20 @@
 <script>
   import '../style.css';
-  import { page } from '$app/stores';
   import Navbar from '../lib/components/Navbar.svelte';
 
-  let pages = [
-    { url: './', title: 'Home' },
-    { url: './projects', title: 'Projects' },
-    { url: './resume', title: 'Resume' },
-    { url: './contact', title: 'Contact' },
-    { url: 'https://github.com/casillasenrique', title: 'GitHub' },
-  ];
+  let localStorage = globalThis.localStorage ?? {}
+  let colorScheme = localStorage.colorScheme ?? 'light dark';
+  $: globalThis.document?.documentElement.style.setProperty(
+    'color-scheme',
+    colorScheme,
+  );
+
+  $: localStorage.colorScheme = colorScheme;
 </script>
 
 <label class="color-scheme">
   Theme:
-  <select>
+  <select bind:value={colorScheme}>
     <option value="light dark">Automatic</option>
     <option value="dark">Dark</option>
     <option value="light">Light</option>

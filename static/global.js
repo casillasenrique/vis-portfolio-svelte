@@ -1,16 +1,5 @@
 console.log('Hi!');
 
-function $$ (selector, context = document) {
-	return Array.from(context.querySelectorAll(selector));
-}
-
-console.log(document);
-const setColorScheme = (colorScheme) => {
-  console.log('color scheme changed to', colorScheme);
-  document.documentElement.style.setProperty('color-scheme', colorScheme);
-  localStorage.setItem('colorScheme', colorScheme);
-};
-
 const form = document.querySelector('form');
 
 form?.addEventListener('submit', (event) => {
@@ -25,9 +14,3 @@ form?.addEventListener('submit', (event) => {
   location.href = url;
 });
 
-const storedColorScheme = localStorage.getItem('colorScheme');
-if (storedColorScheme) {
-  setColorScheme(storedColorScheme);
-  const select = document.querySelector('select');
-  select.value = storedColorScheme;
-}
