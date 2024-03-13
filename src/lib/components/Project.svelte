@@ -9,7 +9,10 @@
 <article>
   <svelte:element this={`h${hLevel}`}>{projectData.title}</svelte:element>
   <img src={projectData.image ?? PLACEHOLDER_IMAGE} alt="Project screenshot" />
-  <p>{projectData.description}</p>
+  <div>
+    <p>{projectData.description}</p>
+    <p>{projectData.year}</p>
+  </div>
 </article>
 
 <style>
