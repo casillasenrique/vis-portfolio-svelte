@@ -14,6 +14,10 @@
 <style>
   dl {
     display: grid;
+    border: 1px solid gray;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0px 5px 3px hsl(0, 0%, 50%, 30%);
   }
 
   dt {
