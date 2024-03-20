@@ -50,7 +50,7 @@
 />
 
 <div class="projects">
-  {#each filteredProjectsByYear as project (project.title)}
+  {#each filteredProjectsByYear as project}
     <Project projectData={project} />
   {/each}
 </div>
