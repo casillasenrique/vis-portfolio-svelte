@@ -4,7 +4,7 @@
 	"private": true,
 	"scripts": {
 		"dev": "vite dev",
-		"prebuild": "node loc-analysis.js",
+		"prebuild": "npx elocuent -d static,src -o static/loc.csv --spaces 2",
 		"build": "vite build",
 		"preview": "vite preview"
 	},

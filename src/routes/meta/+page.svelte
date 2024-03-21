@@ -116,7 +116,7 @@
     { name: 'Total LOC', value: blameData.length },
     { name: 'Total Commits', value: commits.length },
     { name: 'Total Files', value: files.size },
-    { name: 'Mean file length', value: meanFileLength },
+    { name: 'Mean file length', value: Math.round(meanFileLength) },
     { name: 'Most work done', value: maxPeriod },
   ]}
 />
