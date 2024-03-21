@@ -25,8 +25,6 @@ jobs:
 
       - name: Install dependencies
         run: npm install
-      - name: prebuild
-        run: npx elocuent -d static,src -o static/loc.csv --spaces 2
       - name: build
         env:
           BASE_PATH: '/${{ github.event.repository.name }}'
