@@ -70,11 +70,41 @@
   const width = 1000,
     height = 600;
 
-  const yScale = d3.scaleLinear([0, 24], [0, height]);
+  const margin = { top: 10, right: 10, bottom: 30, left: 20 };
+
+  const usableArea = {
+    top: margin.top,
+    right: width - margin.right,
+    bottom: height - margin.bottom,
+    left: margin.left,
+  };
+  usableArea.width = usableArea.right - usableArea.left;
+  usableArea.height = usableArea.bottom - usableArea.top;
+
+  const yScale = d3.scaleLinear([0, 24], [usableArea.bottom, usableArea.top]);
   $: xScale = d3
-    .scaleTime(d3.extent(commits, (d) => d.datetime), [0, width])
+    .scaleTime(
+      d3.extent(commits, (d) => d.datetime),
+      [usableArea.left, usableArea.right],
+    )
     .nice();
   $: console.log(xScale());
+
+  let xAxis, yAxis, yAxisGridlines;
+
+  $: {
+    d3.select(xAxis).call(d3.axisBottom(xScale));
+    d3.select(yAxis).call(
+      d3
+        .axisLeft(yScale)
+        .tickFormat((d) => String(d % 24).padStart(2, '0') + ':00'),
+    );
+  }
+  $: {
+    d3.select(yAxisGridlines).call(
+      d3.axisLeft(yScale).tickFormat('').tickSize(-usableArea.width),
+    );
+  }
 </script>
 
 <h1>Meta</h1>
@@ -92,6 +122,13 @@
 />
 
 <svg viewBox="0 0 {width} {height}">
+  <g
+    class="gridlines"
+    transform="translate({usableArea.left}, 0)"
+    bind:this={yAxisGridlines}
+  />
+  <g transform="translate(0, {usableArea.bottom})" bind:this={xAxis} />
+  <g transform="translate({usableArea.left}, 0)" bind:this={yAxis} />
   <g class="dots">
     {#each commits as commit, index}
       <circle
@@ -107,5 +144,9 @@
 <style>
   svg {
     overflow: visible;
+  }
+
+  .gridlines {
+    stroke-opacity: 0.2;
   }
 </style>
