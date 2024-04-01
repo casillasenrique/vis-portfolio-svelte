@@ -14,10 +14,10 @@
 <h2>GitHub Stats</h2>
 <Stats
   stats={[
-    { name: 'Followers', value: data.githubData.followers },
-    { name: 'Following', value: data.githubData.following },
-    { name: 'Repositories', value: data.githubData.public_repos },
-    { name: 'Bio', value: data.githubData.bio },
+    { label: 'Followers', value: data.githubData.followers },
+    { label: 'Following', value: data.githubData.following },
+    { label: 'Repositories', value: data.githubData.public_repos },
+    { label: 'Bio', value: data.githubData.bio },
   ]}
 />
 

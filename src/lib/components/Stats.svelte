@@ -3,9 +3,9 @@
 </script>
 
 <dl>
-  {#each stats as stat (stat.name)}
+  {#each stats as stat (stat.label)}
     <dt>
-      {stat.name}
+      {stat.label}
     </dt>
     <dd>{stat.value}</dd>
   {/each}

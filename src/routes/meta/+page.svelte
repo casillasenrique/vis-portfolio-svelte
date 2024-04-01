@@ -2,8 +2,12 @@
   import * as d3 from 'd3';
   import { onMount } from 'svelte';
   import Stats from '$lib/components/Stats.svelte';
+  import Pie from '$lib/components/Pie.svelte';
+  import { fade } from 'svelte/transition';
+  import { computePosition, autoPlacement, offset } from '@floating-ui/dom';
 
   let blameData = [];
+  let svg;
 
   onMount(async () => {
     blameData = await d3.csv('loc.csv', (row) => ({
@@ -24,7 +28,9 @@
       let { author, date, time, timezone, datetime } = first;
       let ret = {
         id: commit,
-        url: 'https://github.com/casillasenrique/vis-portfolio-svelte/commit/' + commit,
+        url:
+          'https://github.com/casillasenrique/vis-portfolio-svelte/commit/' +
+          commit,
         author,
         date,
         time,
@@ -46,7 +52,7 @@
       return ret;
     });
 
-  $: console.log(commits);
+  $: d3.sort(commits, (d) => -d.totalLines);
 
   $: fileLengths = d3.rollups(
     blameData,
@@ -105,6 +111,97 @@
       d3.axisLeft(yScale).tickFormat('').tickSize(-usableArea.width),
     );
   }
+
+  /**
+   * Tooltip Logic
+   */
+  let commitTooltip;
+  let tooltipPosition = { x: 0, y: 0 };
+
+  let hoveredIndex = -1;
+  let hoveredCommit = {};
+  $: {
+    if (hoveredIndex != -1) {
+      hoveredCommit = commits[hoveredIndex];
+    }
+  }
+
+  async function dotInteraction(i, e) {
+    if (e.type === 'mouseenter' || e.type === 'focus') {
+      hoveredIndex = i;
+      let hoveredDotElement = e.target;
+      tooltipPosition = await computePosition(
+        hoveredDotElement,
+        commitTooltip,
+        {
+          strategy: 'fixed',
+          middleware: [
+            offset(5),
+            autoPlacement(), // see https://floating-ui.com/docs/autoplacement
+          ],
+        },
+      );
+    } else if (e.type === 'mouseleave' || e.type === 'blur') {
+      hoveredIndex = -1;
+    }
+  }
+
+  /**
+   * Circle area logic
+   */
+  $: radiusScale = d3.scaleSqrt(
+    d3.extent(commits, (d) => d.totalLines),
+    [2, 30],
+  );
+
+  /**
+   * Brushing logic
+   */
+  let brushSelection;
+
+  function isCommitSelected(commit) {
+    if (!brushSelection) {
+      return false;
+    }
+
+    const brushTopLeft = brushSelection[0];
+    const brushBottomRight = brushSelection[1];
+    const commitX = xScale(commit.datetime),
+      commitY = yScale(commit.hourFrac);
+
+    return !(
+      commitX < brushTopLeft[0] ||
+      commitX > brushBottomRight[0] ||
+      commitY < brushTopLeft[1] ||
+      commitY > brushBottomRight[1]
+    );
+  }
+
+  $: {
+    d3.select(svg).call(
+      d3.brush().on('start brush end', (e) => (brushSelection = e.selection)),
+    );
+    d3.select(svg).selectAll('.dots, .overlay ~ *').raise();
+  }
+
+  $: selectedCommits = brushSelection ? commits.filter(isCommitSelected) : [];
+  $: hasSelection = brushSelection && selectedCommits.length > 0;
+  let languageBreakdown;
+  $: {
+    const selectedLines = (hasSelection ? selectedCommits : commits).flatMap(
+      (d) => d.lines,
+    );
+    console.log(selectedLines);
+    languageBreakdown = d3
+      .rollups(
+        selectedLines,
+        (d) => d.length,
+        (d) => d.type,
+      )
+      .map(([language, lines]) => ({ label: language, value: lines }));
+
+    console.log(languageBreakdown);
+  }
 </script>
 
 <h1>Meta</h1>
@@ -113,15 +210,44 @@
 
 <Stats
   stats={[
-    { name: 'Total LOC', value: blameData.length },
-    { name: 'Total Commits', value: commits.length },
-    { name: 'Total Files', value: files.size },
-    { name: 'Mean file length', value: Math.round(meanFileLength) },
-    { name: 'Most work done', value: maxPeriod },
+    { label: 'Total LOC', value: blameData.length },
+    { label: 'Total Commits', value: commits.length },
+    { label: 'Total Files', value: files.size },
+    { label: 'Mean file length', value: Math.round(meanFileLength) },
+    { label: 'Most work done', value: maxPeriod },
   ]}
 />
 
-<svg viewBox="0 0 {width} {height}">
+<dl
+  id="commit-tooltip"
+  class="info tooltip"
+  bind:this={commitTooltip}
+  transition:fade
+  role="tooltip"
+  style="top: {tooltipPosition.y}px; left: {tooltipPosition.x}px"
+  hidden={hoveredIndex === -1}
+>
+  <dt>Commit</dt>
+  <dd><a href={hoveredCommit.url} target="_blank">{hoveredCommit.id}</a></dd>
+
+  <dt>Date</dt>
+  <dd>
+    {hoveredCommit.datetime?.toLocaleString('en', { dateStyle: 'full' })}
+  </dd>
+
+  <!-- Add: Time, author, lines edited -->
+  <dt>Time</dt>
+  <dd>{hoveredCommit.time?.toLocaleString('en', { timeStyle: 'long' })}</dd>
+
+  <dt>Author</dt>
+  <dd>{hoveredCommit.author}</dd>
+
+  <dt>Lines Edited</dt>
+  <dd>{hoveredCommit.totalLines}</dd>
+</dl>
+
+<h2>Commits by time of day</h2>
+<svg viewBox="0 0 {width} {height}" bind:this={svg}>
   <g
     class="gridlines"
     transform="translate({usableArea.left}, 0)"
@@ -130,16 +256,31 @@
   <g transform="translate(0, {usableArea.bottom})" bind:this={xAxis} />
   <g transform="translate({usableArea.left}, 0)" bind:this={yAxis} />
   <g class="dots">
-    {#each commits as commit, index}
+    {#each commits as commit, i}
       <circle
         cx={xScale(commit.datetime)}
         cy={yScale(commit.hourFrac)}
-        r="5"
+        r={radiusScale(commit.totalLines)}
+        class:selected={isCommitSelected(commit)}
         fill="steelblue"
+        aria-haspopup="true"
+        aria-describedby="commit-tooltip"
+        role="button"
+        on:mouseenter={(e) => dotInteraction(i, e)}
+        on:mouseleave={(e) => dotInteraction(i, e)}
+        on:focus={(e) => dotInteraction(i, e)}
+        on:blur={(e) => dotInteraction(i, e)}
+        tabindex="0"
       />
     {/each}
   </g>
 </svg>
+
+<p>{hasSelection ? selectedCommits.length : 'No'} commits selected</p>
+
+<Stats stats={languageBreakdown} />
+
+<Pie pieData={languageBreakdown} />
 
 <style>
   svg {
@@ -148,5 +289,81 @@
 
   .gridlines {
     stroke-opacity: 0.2;
+  }
+
+  dl.info {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: baseline;
+    margin: 0;
+
+    transition-duration: 500ms;
+    transition-property: opacity, visibility;
+
+    dt,
+    dd {
+      padding: 0.1em 0.5em;
+    }
+
+    dt {
+      color: hsl(220 10 50);
+      text-transform: uppercase;
+      font-size: 85%;
+      font-weight: 500;
+      text-align: right;
+    }
+
+    dd {
+      margin: 0;
+    }
+
+    &[hidden]:not(:hover, :focus-within) {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+
+  .tooltip {
+    position: fixed;
+    top: 1em;
+    left: 1em;
+    padding: 1em;
+
+    background-color: oklch(100% 0% 0 / 80%);
+    box-shadow: 0px 0px 5px oklch(0% 0% 0 / 50%);
+    border-radius: 1rem;
+    backdrop-filter: blur(1px);
+  }
+
+  circle {
+    transition: 200ms;
+    transform-origin: center;
+    transform-box: fill-box;
+    fill-opacity: 0.5;
+
+    &:hover,
+    &.selected {
+      transform: scale(1.5);
+      cursor: pointer;
+      fill-opacity: 1;
+    }
+
+    &.selected {
+      fill: rgba(255, 59, 59, 0.9);
+    }
+  }
+
+  @keyframes marching-ants {
+    to {
+      stroke-dashoffset: -8; /* 5 + 3 */
+    }
+  }
+
+  svg :global(.selection) {
+    fill-opacity: 10%;
+    stroke: black;
+    stroke-opacity: 70%;
+    stroke-dasharray: 5 3;
+    animation: marching-ants 2s linear infinite;
   }
 </style>
