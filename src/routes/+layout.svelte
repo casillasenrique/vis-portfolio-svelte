@@ -1,3 +1,4 @@
+<slot />
 <script>
   import '../style.css';
   import Navbar from '../lib/components/Navbar.svelte';
@@ -22,7 +23,6 @@
 </label>
 
 <Navbar />
-<slot />
 
 <style>
   .color-scheme {
