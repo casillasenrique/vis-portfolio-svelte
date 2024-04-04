@@ -88,7 +88,7 @@
   usableArea.height = usableArea.bottom - usableArea.top;
 
   $: yScale = d3.scaleLinear([0, 24], [usableArea.bottom, usableArea.top]);
-  $:  xScale = d3
+  $: xScale = d3
     .scaleTime(
       d3.extent(commits, (d) => d.datetime),
       [usableArea.left, usableArea.right],
@@ -186,22 +186,31 @@
 
   $: selectedCommits = brushSelection ? commits.filter(isCommitSelected) : [];
   $: hasSelection = brushSelection && selectedCommits.length > 0;
-  let languageBreakdown;
-  $: {
-    const selectedLines = (hasSelection ? selectedCommits : commits).flatMap(
-      (d) => d.lines,
-    );
-    console.log(selectedLines);
-    languageBreakdown = d3
-      .rollups(
-        selectedLines,
-        (d) => d.length,
-        (d) => d.type,
-      )
-      .map(([language, lines]) => ({ label: language, value: lines }));
 
-    console.log(languageBreakdown);
-  }
+  $: selectedLines = (hasSelection ? selectedCommits : commits).flatMap(
+    (d) => d.lines,
+  );
+  $: languageBreakdown = d3.rollup(
+    selectedLines,
+    (amount) => amount.length,
+    (lang) => lang.type,
+  );
+  // let languageBreakdown;
+  // $: {
+  //   const selectedLines = (hasSelection ? selectedCommits : commits).flatMap(
+  //     (d) => d.lines,
+  //   );
+  //   console.log(selectedLines);
+  //   languageBreakdown = d3
+  //     .rollups(
+  //       selectedLines,
+  //       (d) => d.length,
+  //       (d) => d.type,
+  //     )
+  //     .map(([language, lines]) => ({ label: language, value: lines }));
+
+  //   console.log(languageBreakdown);
+  // }
 </script>
 
 <h1>Meta</h1>
@@ -278,9 +287,14 @@
 
 <p>{hasSelection ? selectedCommits.length : 'No'} commits selected</p>
 
-<Stats stats={languageBreakdown} />
+<!-- <Stats stats={languageBreakdown} /> -->
 
-<Pie pieData={languageBreakdown} />
+<Pie
+  pieData={Array.from(languageBreakdown).map(([language, lines]) => ({
+    label: language,
+    value: lines,
+  }))}
+/>
 
 <style>
   svg {
