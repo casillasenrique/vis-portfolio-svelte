@@ -87,8 +87,8 @@
   usableArea.width = usableArea.right - usableArea.left;
   usableArea.height = usableArea.bottom - usableArea.top;
 
-  const yScale = d3.scaleLinear([0, 24], [usableArea.bottom, usableArea.top]);
-  $: xScale = d3
+  $: yScale = d3.scaleLinear([0, 24], [usableArea.bottom, usableArea.top]);
+  $:  xScale = d3
     .scaleTime(
       d3.extent(commits, (d) => d.datetime),
       [usableArea.left, usableArea.right],
