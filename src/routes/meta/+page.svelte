@@ -8,6 +8,7 @@
 
   let blameData = [];
   let svg;
+  let commits = [];
 
   onMount(async () => {
     blameData = await d3.csv('loc.csv', (row) => ({
@@ -19,38 +20,38 @@
       datetime: new Date(row.datetime),
     }));
     console.log(blameData);
-  });
 
-  $: commits = d3
-    .groups(blameData, (d) => d.commit)
-    .map(([commit, lines]) => {
-      let first = lines[0];
-      let { author, date, time, timezone, datetime } = first;
-      let ret = {
-        id: commit,
-        url:
-          'https://github.com/casillasenrique/vis-portfolio-svelte/commit/' +
-          commit,
-        author,
-        date,
-        time,
-        timezone,
-        datetime,
-        hourFrac: datetime.getHours() + datetime.getMinutes() / 60,
-        totalLines: lines.length,
-      };
+    commits = d3
+      .groups(blameData, (d) => d.commit)
+      .map(([commit, lines]) => {
+        let first = lines[0];
+        let { author, date, time, timezone, datetime } = first;
+        let ret = {
+          id: commit,
+          url:
+            'https://github.com/casillasenrique/vis-portfolio-svelte/commit/' +
+            commit,
+          author,
+          date,
+          time,
+          timezone,
+          datetime,
+          hourFrac: datetime.getHours() + datetime.getMinutes() / 60,
+          totalLines: lines.length,
+        };
 
-      // Like ret.lines = lines
-      // but non-enumerable so it doesn’t show up in JSON.stringify
-      Object.defineProperty(ret, 'lines', {
-        value: lines,
-        configurable: true,
-        writable: true,
-        enumerable: false,
+        // Like ret.lines = lines
+        // but non-enumerable so it doesn’t show up in JSON.stringify
+        Object.defineProperty(ret, 'lines', {
+          value: lines,
+          configurable: true,
+          writable: true,
+          enumerable: false,
+        });
+
+        return ret;
       });
-
-      return ret;
-    });
+  });
 
   $: d3.sort(commits, (d) => -d.totalLines);
 

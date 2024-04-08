@@ -1,4 +1,3 @@
-<slot />
 <script>
   import '../style.css';
   import Navbar from '../lib/components/Navbar.svelte';
@@ -8,10 +7,10 @@
   $: globalThis.document?.documentElement.style.setProperty(
     'color-scheme',
     colorScheme,
-  );
-
-  $: localStorage.colorScheme = colorScheme;
-</script>
+    );
+    
+    $: localStorage.colorScheme = colorScheme;
+  </script>
 
 <label class="color-scheme">
   Theme:
@@ -23,6 +22,7 @@
 </label>
 
 <Navbar />
+<slot />
 
 <style>
   .color-scheme {
