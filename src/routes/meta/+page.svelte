@@ -144,6 +144,8 @@
       );
     } else if (e.type === 'mouseleave' || e.type === 'blur') {
       hoveredIndex = -1;
+    } else if (e.type === 'click' || e.type === 'keyup') {
+      selectedCommits = [commits[i]];
     }
   }
 
@@ -158,35 +160,33 @@
   /**
    * Brushing logic
    */
-  let brushSelection;
 
   function isCommitSelected(commit) {
-    if (!brushSelection) {
-      return false;
-    }
+    return selectedCommits.includes(commit);
+  }
 
-    const brushTopLeft = brushSelection[0];
-    const brushBottomRight = brushSelection[1];
-    const commitX = xScale(commit.datetime),
-      commitY = yScale(commit.hourFrac);
+  let selectedCommits = [];
 
-    return !(
-      commitX < brushTopLeft[0] ||
-      commitX > brushBottomRight[0] ||
-      commitY < brushTopLeft[1] ||
-      commitY > brushBottomRight[1]
-    );
+  function brushed(evt) {
+    let brushSelection = evt.selection;
+    selectedCommits = !brushSelection
+      ? []
+      : commits.filter((commit) => {
+          let min = { x: brushSelection[0][0], y: brushSelection[0][1] };
+          let max = { x: brushSelection[1][0], y: brushSelection[1][1] };
+          let x = xScale(commit.date);
+          let y = yScale(commit.hourFrac);
+
+          return x >= min.x && x <= max.x && y >= min.y && y <= max.y;
+        });
   }
 
   $: {
-    d3.select(svg).call(
-      d3.brush().on('start brush end', (e) => (brushSelection = e.selection)),
-    );
+    d3.select(svg).call(d3.brush().on('start brush end', brushed));
     d3.select(svg).selectAll('.dots, .overlay ~ *').raise();
   }
 
-  $: selectedCommits = brushSelection ? commits.filter(isCommitSelected) : [];
-  $: hasSelection = brushSelection && selectedCommits.length > 0;
+  $: hasSelection = selectedCommits.length;
 
   $: selectedLines = (hasSelection ? selectedCommits : commits).flatMap(
     (d) => d.lines,
@@ -196,22 +196,6 @@
     (amount) => amount.length,
     (lang) => lang.type,
   );
-  // let languageBreakdown;
-  // $: {
-  //   const selectedLines = (hasSelection ? selectedCommits : commits).flatMap(
-  //     (d) => d.lines,
-  //   );
-  //   console.log(selectedLines);
-  //   languageBreakdown = d3
-  //     .rollups(
-  //       selectedLines,
-  //       (d) => d.length,
-  //       (d) => d.type,
-  //     )
-  //     .map(([language, lines]) => ({ label: language, value: lines }));
-
-  //   console.log(languageBreakdown);
-  // }
 </script>
 
 <h1>Meta</h1>
@@ -276,6 +260,8 @@
         aria-haspopup="true"
         aria-describedby="commit-tooltip"
         role="button"
+        on:click={(e) => dotInteraction(i, e)}
+        on:keyup={(e) => dotInteraction(i, e)}
         on:mouseenter={(e) => dotInteraction(i, e)}
         on:mouseleave={(e) => dotInteraction(i, e)}
         on:focus={(e) => dotInteraction(i, e)}

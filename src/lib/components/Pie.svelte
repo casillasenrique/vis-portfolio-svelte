@@ -9,12 +9,6 @@
 
   let sliceGenerator = d3.pie().value((d) => d.value);
 
-  let arcs;
-  $: {
-    let arcData = sliceGenerator(pieData);
-    arcs = arcData.map((d) => arcGenerator(d));
-  }
-
   let colors = d3.scaleOrdinal(d3.schemeTableau10);
 
   function toggleWedge(wedgeIndex, event) {
@@ -28,14 +22,25 @@
       selectedIndex = wedgeIndex;
     }
   }
+  let cleanPieData;
+  $: {
+    cleanPieData = d3.sort(pieData, d => d.label);
+    const arcData = sliceGenerator(cleanPieData);
+    const arcs = arcData.map((d) => arcGenerator(d));
+    cleanPieData = d3.sort(cleanPieData.map((d, i) => ({
+      ...d,
+      ...arcData[i],
+      arc: arcs[i],
+    })), d => d.label);
+  }
 </script>
 
 <div class="container">
   <svg viewBox="-50 -50 100 100">
-    {#each arcs as path, i}
+    {#each cleanPieData as d, i (d.label)}
       <path
-        d={path}
-        fill={selectedIndex === i ? 'oklch(60% 45% 0)' : colors(i)}
+        d={d.arc}
+        fill={selectedIndex === i ? 'oklch(60% 45% 0)' : colors(d.label)}
         on:click={() => toggleWedge(i)}
         on:keyup={(e) => toggleWedge(i, e)}
         tabindex="0"
@@ -46,9 +51,10 @@
   </svg>
 
   <ul class="legend">
-    {#each pieData as d, i}
-      <li style="--color: {colors(i)}">
-        <span class="swatch" style="background-color: {colors(i)};"></span>
+    {#each cleanPieData as d, i}
+      <li style="--color: {colors(d.label)}">
+        <span class="swatch" style="background-color: {colors(d.label)};"
+        ></span>
         {d.label} <em>({d.value})</em>
       </li>
     {/each}
@@ -78,8 +84,8 @@
   }
 
   path {
-    transition: 300ms;
     outline: none;
+    fill-opacity: 75%;
   }
 
   .legend {
