@@ -5,6 +5,7 @@
   import Pie from '$lib/components/Pie.svelte';
   import { fade } from 'svelte/transition';
   import { computePosition, autoPlacement, offset } from '@floating-ui/dom';
+  import FileLines from './FileLines.svelte';
 
   let blameData = [];
   let svg;
@@ -91,7 +92,7 @@
   $: yScale = d3.scaleLinear([0, 24], [usableArea.bottom, usableArea.top]);
   $: xScale = d3
     .scaleTime(
-      d3.extent(commits, (d) => d.datetime),
+      d3.extent(filteredCommits, (d) => d.datetime),
       [usableArea.left, usableArea.right],
     )
     .nice();
@@ -123,7 +124,7 @@
   let hoveredCommit = {};
   $: {
     if (hoveredIndex != -1) {
-      hoveredCommit = commits[hoveredIndex];
+      hoveredCommit = filteredCommits[hoveredIndex];
     }
   }
 
@@ -171,7 +172,7 @@
     let brushSelection = evt.selection;
     selectedCommits = !brushSelection
       ? []
-      : commits.filter((commit) => {
+      : filteredCommits.filter((commit) => {
           let min = { x: brushSelection[0][0], y: brushSelection[0][1] };
           let max = { x: brushSelection[1][0], y: brushSelection[1][1] };
           let x = xScale(commit.date);
@@ -195,6 +196,19 @@
     selectedLines,
     (amount) => amount.length,
     (lang) => lang.type,
+  );
+
+  // Lab 9
+  let commitProgress = 100;
+
+  $: timeScale = d3.scaleTime(
+    d3.extent(commits, (d) => d.datetime),
+    [0, 100],
+  );
+  $: commitMaxTime = timeScale.invert(commitProgress);
+
+  $: filteredCommits = commits.filter(
+    (d) => d.datetime <= timeScale.invert(commitProgress),
   );
 </script>
 
@@ -250,7 +264,7 @@
   <g transform="translate(0, {usableArea.bottom})" bind:this={xAxis} />
   <g transform="translate({usableArea.left}, 0)" bind:this={yAxis} />
   <g class="dots">
-    {#each commits as commit, i}
+    {#each filteredCommits as commit, i}
       <circle
         cx={xScale(commit.datetime)}
         cy={yScale(commit.hourFrac)}
@@ -283,7 +297,35 @@
   }))}
 />
 
+<label class="time-filter">
+  Max time: {commitProgress}
+  <input type="range" bind:value={commitProgress} />
+  <time
+    >{commitMaxTime.toLocaleString('en', {
+      dateStyle: 'long',
+      timeStyle: 'short',
+    })}</time
+  >
+</label>
+
+<FileLines lines={selectedLines} />
+
 <style>
+  .time-filter {
+    position: sticky;
+    top: 1em;
+    z-index: 1;
+    background: white;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5em;
+    margin-block: 1.5em;
+
+    time {
+      grid-column: 2;
+      text-align: right;
+    }
+  }
   svg {
     overflow: visible;
   }
