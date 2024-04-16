@@ -93,19 +93,21 @@
 
   $: hasSelection = selectedCommits.length;
 
-  $: selectedLines = (hasSelection ? selectedCommits : commits).flatMap(
+  $: selectedLines = (hasSelection ? selectedCommits : filteredCommits).flatMap(
     (d) => d.lines,
   );
 
-  $: filteredLines = selectedLines.filter(
-    (d) => d.datetime <= timeScale.invert(commitProgress),
-  );
+  let raceProgress = 0;
+  $: raceMaxTime = timeScale.invert(raceProgress);
+  $: filteredLines = selectedLines.filter((d) => d.datetime <= raceMaxTime);
 
   $: languageBreakdown = d3.rollup(
     filteredLines,
     (amount) => amount.length,
     (lang) => lang.type,
   );
+
+  $: totalProgress = (commitProgress + raceProgress) / 2;
 </script>
 
 <h1>Meta</h1>
@@ -123,8 +125,8 @@
 />
 
 <label class="time-filter">
-  Max time: {commitProgress}
-  <input type="range" bind:value={commitProgress} />
+  Max time: {Math.round(totalProgress)}
+  <input type="range" bind:value={totalProgress} />
   <time
     >{commitMaxTime.toLocaleString('en', {
       dateStyle: 'long',
@@ -132,8 +134,6 @@
     })}</time
   >
 </label>
-
-<FileLines lines={filteredLines} {colors} />
 
 <Stats
   stats={Array.from(languageBreakdown).map(([language, lines]) => ({
@@ -174,13 +174,43 @@
       }))}
       {colors}
     />
-    <!-- Visualizations here -->
+  </svelte:fragment>
+</Scrolly>
+
+<h2>Race</h2>
+
+<Scrolly
+  bind:progress={raceProgress}
+  --scrolly-layout="viz-first"
+  --scrolly-viz-width="1.5fr"
+  throttle={200}
+>
+  {#each commits as commit, index}
+    <p>
+      On {commit.datetime.toLocaleString('en', {
+        dateStyle: 'full',
+        timeStyle: 'short',
+      })}, I made
+      <a href={commit.url} target="_blank"
+        >{index > 0
+          ? 'another glorious commit'
+          : 'my first commit, and it was glorious'}</a
+      >. I edited {commit.totalLines} lines across {d3.rollups(
+        commit.lines,
+        (D) => D.length,
+        (d) => d.file,
+      ).length} files. Then I looked over all I had made, and I saw that it was very
+      good. This part of the lab demonstrates using scrollytelling to tell a narrative.
+      The accompanying visualization describes how the commits change over time.
+    </p>
+  {/each}
+  <svelte:fragment slot="viz">
+    <FileLines lines={filteredLines} {colors} />
   </svelte:fragment>
 </Scrolly>
 
 <style>
   .time-filter {
-    position: sticky;
     top: 1em;
     z-index: 1;
     background: white;
