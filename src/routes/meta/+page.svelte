@@ -97,12 +97,12 @@
     (d) => d.lines,
   );
 
-  $: filteredLines = blameData.filter(
+  $: filteredLines = selectedLines.filter(
     (d) => d.datetime <= timeScale.invert(commitProgress),
   );
 
   $: languageBreakdown = d3.rollup(
-    selectedLines,
+    filteredLines,
     (amount) => amount.length,
     (lang) => lang.type,
   );
@@ -135,6 +135,13 @@
 
 <FileLines lines={filteredLines} {colors} />
 
+<Stats
+  stats={Array.from(languageBreakdown).map(([language, lines]) => ({
+    label: language,
+    value: lines,
+  }))}
+/>
+
 <Scrolly bind:progress={commitProgress}>
   {#each commits as commit, index}
     <p>
@@ -151,20 +158,14 @@
         (D) => D.length,
         (d) => d.file,
       ).length} files. Then I looked over all I had made, and I saw that it was very
-      good.
+      good. This part of the lab demonstrates using scrollytelling to tell a narrative.
+      The accompanying visualization describes how the commits change over time.
     </p>
   {/each}
   <svelte:fragment slot="viz">
     <Scatterplot commits={filteredCommits} bind:selectedCommits />
 
     <p>{hasSelection ? selectedCommits.length : 'No'} commits selected</p>
-
-    <Stats
-      stats={Array.from(languageBreakdown).map(([language, lines]) => ({
-        label: language,
-        value: lines,
-      }))}
-    />
 
     <Pie
       pieData={Array.from(languageBreakdown).map(([language, lines]) => ({
