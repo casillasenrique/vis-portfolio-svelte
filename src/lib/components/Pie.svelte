@@ -203,4 +203,8 @@
       height: 1.5em;
     }
   }
+
+  :global(body) {
+    max-width: min(120ch, 80vw);
+  }
 </style>

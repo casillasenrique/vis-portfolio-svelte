@@ -7,6 +7,8 @@
   import FileLines from './FileLines.svelte';
   import Scatterplot from './Scatterplot.svelte';
 
+  import Scrolly from 'svelte-scrolly';
+
   let blameData = [];
   let commits = [];
   let selectedCommits = [];
@@ -133,24 +135,47 @@
 
 <FileLines lines={filteredLines} {colors} />
 
-<Scatterplot commits={filteredCommits} bind:selectedCommits />
+<Scrolly bind:progress={commitProgress}>
+  {#each commits as commit, index}
+    <p>
+      On {commit.datetime.toLocaleString('en', {
+        dateStyle: 'full',
+        timeStyle: 'short',
+      })}, I made
+      <a href={commit.url} target="_blank"
+        >{index > 0
+          ? 'another glorious commit'
+          : 'my first commit, and it was glorious'}</a
+      >. I edited {commit.totalLines} lines across {d3.rollups(
+        commit.lines,
+        (D) => D.length,
+        (d) => d.file,
+      ).length} files. Then I looked over all I had made, and I saw that it was very
+      good.
+    </p>
+  {/each}
+  <svelte:fragment slot="viz">
+    <Scatterplot commits={filteredCommits} bind:selectedCommits />
 
-<p>{hasSelection ? selectedCommits.length : 'No'} commits selected</p>
+    <p>{hasSelection ? selectedCommits.length : 'No'} commits selected</p>
 
-<Stats
-  stats={Array.from(languageBreakdown).map(([language, lines]) => ({
-    label: language,
-    value: lines,
-  }))}
-/>
+    <Stats
+      stats={Array.from(languageBreakdown).map(([language, lines]) => ({
+        label: language,
+        value: lines,
+      }))}
+    />
 
-<Pie
-  pieData={Array.from(languageBreakdown).map(([language, lines]) => ({
-    label: language,
-    value: lines,
-  }))}
-  {colors}
-/>
+    <Pie
+      pieData={Array.from(languageBreakdown).map(([language, lines]) => ({
+        label: language,
+        value: lines,
+      }))}
+      {colors}
+    />
+    <!-- Visualizations here -->
+  </svelte:fragment>
+</Scrolly>
 
 <style>
   .time-filter {
