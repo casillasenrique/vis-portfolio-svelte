@@ -9,8 +9,14 @@
 
   let arcGenerator = d3.arc().innerRadius(0).outerRadius(50);
 
-  let sliceGenerator = d3.pie().value((d) => d.value);
+  let transitionDuration = 200;
 
+  let wedges = {};
+
+  let sliceGenerator = d3
+    .pie()
+    .value((d) => d.value)
+    .sort(null);
 
   function toggleWedge(wedgeIndex, event) {
     if (event && event.key !== 'Enter') {
@@ -24,15 +30,91 @@
     }
   }
   let cleanPieData;
+  let oldPieData;
   $: {
-    cleanPieData = d3.sort(pieData, d => d.label);
+    oldPieData = cleanPieData;
+    cleanPieData = d3.sort(pieData, (d) => d.label);
     const arcData = sliceGenerator(cleanPieData);
     const arcs = arcData.map((d) => arcGenerator(d));
-    cleanPieData = d3.sort(cleanPieData.map((d, i) => ({
+    cleanPieData = cleanPieData.map((d, i) => ({
       ...d,
       ...arcData[i],
       arc: arcs[i],
-    })), d => d.label);
+    }));
+    transitionArcs();
+  }
+
+  function getEmptyArc(label, data = pieData) {
+    // Union of old and new labels in the order they appear
+    let labels = d3.sort(new Set([...oldData, ...pieData].map((d) => d.label)));
+    let labelIndex = labels.indexOf(label);
+    let sibling;
+    for (let i = labelIndex - 1; i >= 0; i--) {
+      sibling = data.find((d) => d.label === labels[i]);
+      if (sibling) {
+        break;
+      }
+    }
+
+    let angle = sibling?.endAngle ?? 0;
+    return { startAngle: angle, endAngle: angle };
+  }
+
+  function sameArc(arc1, arc2) {
+    return (
+      !(arc1 && arc2) ||
+      (arc1.startAngle === arc2.startAngle && arc1.endAngle === arc2.endAngle)
+    );
+  }
+
+  function transitionArc(wedge, label) {
+    label ??= Object.entries(wedges).find(([label, w]) => w === wedge)[0];
+
+    const d = cleanPieData.find((d) => d.label === label);
+    const dOld = oldPieData.find((d) => d.label === label);
+
+    if (sameArc(d, dOld)) {
+      return null;
+    }
+
+    const type = d ? (dOld ? 'update' : 'in') : 'out';
+
+    const from = dOld ? { ...dOld } : getEmptyArc(label, oldPieData);
+    const to = d ? { ...d } : getEmptyArc(label, oldPieData);
+    const angleInterpolator = d3.interpolate(from, to);
+    const interpolator = (t) => `path("${arcGenerator(angleInterpolator(t))}")`;
+
+    return { d, dOld, from, to, interpolator, type };
+  }
+
+  function transitionArcs() {
+    const wedgeElements = Object.values(wedges);
+    const wedgeLabels = Object.keys(wedges);
+
+    d3.selectAll(wedgeElements)
+      .transition('arc')
+      .duration(transitionDuration)
+      .styleTween('d', function (_, index) {
+        const wedge = this;
+        const label = wedgeLabels[index];
+        const transition = transitionArc(wedge, label);
+        return transition?.interpolator;
+      });
+  }
+
+  function arc(wedge) {
+    let transition = transitionArc(wedge);
+
+    if (!transition || oldData.length === 0) {
+      return;
+    }
+
+    return {
+      easing: d3.easeCubic,
+      duration: transitionDuration,
+      css: (t, u) =>
+        `d: ${transition.interpolator(transition.type === 'out' ? u : t)}`,
+    };
   }
 </script>
 
@@ -41,7 +123,11 @@
     {#each cleanPieData as d, i (d.label)}
       <path
         d={d.arc}
-        fill={selectedIndex === i ? 'oklch(60% 45% 0)' : colors(d.id ?? d.label)}
+        bind:this={wedges[d.label]}
+        transition:arc
+        fill={selectedIndex === i
+          ? 'oklch(60% 45% 0)'
+          : colors(d.id ?? d.label)}
         on:click={() => toggleWedge(i)}
         on:keyup={(e) => toggleWedge(i, e)}
         tabindex="0"
@@ -87,6 +173,8 @@
   path {
     outline: none;
     fill-opacity: 75%;
+    transition: 300ms;
+    transition-property: transform, opacity, fill;
   }
 
   .legend {
