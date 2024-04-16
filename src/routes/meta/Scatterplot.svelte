@@ -28,7 +28,6 @@
       [usableArea.left, usableArea.right],
     )
     .nice();
-  $: console.log(xScale());
 
   let xAxis, yAxis, yAxisGridlines;
 

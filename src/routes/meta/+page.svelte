@@ -79,7 +79,7 @@
   }
 
   // Lab 9
-  let commitProgress = 100;
+  let commitProgress = 0;
 
   $: timeScale = d3.scaleTime(
     d3.extent(commits, (d) => d.datetime),
