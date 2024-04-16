@@ -5,11 +5,12 @@
 
   export let selectedIndex = -1;
 
+  export let colors = d3.scaleOrdinal(d3.schemeTableau10);
+
   let arcGenerator = d3.arc().innerRadius(0).outerRadius(50);
 
   let sliceGenerator = d3.pie().value((d) => d.value);
 
-  let colors = d3.scaleOrdinal(d3.schemeTableau10);
 
   function toggleWedge(wedgeIndex, event) {
     if (event && event.key !== 'Enter') {
@@ -40,7 +41,7 @@
     {#each cleanPieData as d, i (d.label)}
       <path
         d={d.arc}
-        fill={selectedIndex === i ? 'oklch(60% 45% 0)' : colors(d.label)}
+        fill={selectedIndex === i ? 'oklch(60% 45% 0)' : colors(d.id ?? d.label)}
         on:click={() => toggleWedge(i)}
         on:keyup={(e) => toggleWedge(i, e)}
         tabindex="0"

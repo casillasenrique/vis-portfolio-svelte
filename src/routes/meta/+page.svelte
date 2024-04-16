@@ -11,6 +11,8 @@
   let commits = [];
   let selectedCommits = [];
 
+  let colors = d3.scaleOrdinal(d3.schemeTableau10);
+
   onMount(async () => {
     blameData = await d3.csv('loc.csv', (row) => ({
       ...row,
@@ -92,6 +94,11 @@
   $: selectedLines = (hasSelection ? selectedCommits : commits).flatMap(
     (d) => d.lines,
   );
+
+  $: filteredLines = blameData.filter(
+    (d) => d.datetime <= timeScale.invert(commitProgress),
+  );
+
   $: languageBreakdown = d3.rollup(
     selectedLines,
     (amount) => amount.length,
@@ -124,6 +131,8 @@
   >
 </label>
 
+<FileLines lines={filteredLines} {colors} />
+
 <Scatterplot commits={filteredCommits} bind:selectedCommits />
 
 <p>{hasSelection ? selectedCommits.length : 'No'} commits selected</p>
@@ -140,9 +149,8 @@
     label: language,
     value: lines,
   }))}
+  {colors}
 />
-
-<FileLines lines={selectedLines} />
 
 <style>
   .time-filter {
